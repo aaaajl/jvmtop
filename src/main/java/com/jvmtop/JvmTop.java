@@ -80,8 +80,7 @@ public class JvmTop
     parser.acceptsAll(Arrays.asList(new String[] { "help", "?", "h" }),
         "shows this help").forHelp();
     parser
-        .accepts("once",
-            "jvmtop will exit after first output iteration [deprecated, use -n 1 instead]");
+        .accepts("once", "jvmtop will exit after first output iteration [deprecated, use -n 1 instead]");
     parser
         .acceptsAll(Arrays.asList(new String[] { "n", "iteration" }),
             "jvmtop will exit after n output iterations").withRequiredArg()
@@ -96,6 +95,7 @@ public class JvmTop
     parser.accepts("threadlimit",
         "sets the number of displayed threads in detail mode")
         .withRequiredArg().ofType(Integer.class);
+    parser.accepts("tracedeep","sets the number of display threads trace depth").withOptionalArg().ofType(Integer.class);
     parser
         .accepts("disable-threadlimit", "displays all threads in detail mode");
 
@@ -150,6 +150,8 @@ public class JvmTop
 
     Integer threadNameWidth = null;
 
+    Integer tracedeep = 0;
+
     if (a.hasArgument("delay"))
     {
       delay = (Double) (a.valueOf("delay"));
@@ -202,6 +204,10 @@ public class JvmTop
       threadNameWidth = (Integer) a.valueOf("threadnamewidth");
     }
 
+    if(a.hasArgument("tracedeep")){
+      tracedeep = (Integer) a.valueOf("tracedeep");
+    }
+
     if (sysInfoOption)
     {
       outputSystemProps();
@@ -232,6 +238,9 @@ public class JvmTop
           if (threadNameWidth != null)
           {
             vmDetailView.setThreadNameDisplayWidth(threadNameWidth);
+          }
+          if(tracedeep>0){
+            vmDetailView.setDeep(tracedeep);
           }
           jvmTop.run(vmDetailView);
 

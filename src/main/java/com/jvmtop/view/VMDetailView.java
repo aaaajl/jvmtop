@@ -52,6 +52,8 @@ public class VMDetailView extends AbstractConsoleView
 
   private boolean         displayedThreadLimit_     = true;
 
+  private int             deep = 0;
+
   //TODO: refactor
   private Map<Long, Long> previousThreadCPUMillis   = new HashMap<Long, Long>();
 
@@ -161,9 +163,9 @@ public class VMDetailView extends AbstractConsoleView
    */
   private void printTopThreads() throws Exception
   {
-    System.out.printf(" %6s %-" + threadNameDisplayWidth_
-        + "s  %13s %8s    %8s %5s %n", "TID", "NAME", "STATE", "CPU",
-        "TOTALCPU", "BLOCKEDBY");
+    System.out.printf(
+            " %6s %-" + threadNameDisplayWidth_ + "s  %13s %8s    %8s %5s %n",
+            "TID", "NAME", "STATE", "CPU", "TOTALCPU", "BLOCKEDBY");
 
     if (vmInfo_.getThreadMXBean().isThreadCpuTimeSupported())
     {
@@ -191,7 +193,12 @@ public class VMDetailView extends AbstractConsoleView
       int displayedThreads = 0;
       for (Long tid : cpuTimeMap.keySet())
       {
-        ThreadInfo info = vmInfo_.getThreadMXBean().getThreadInfo(tid);
+        ThreadInfo info =null;
+        if(deep>0){
+          info = vmInfo_.getThreadMXBean().getThreadInfo(tid,deep);
+        }else{
+          info = vmInfo_.getThreadMXBean().getThreadInfo(tid);
+        }
         displayedThreads++;
         if (displayedThreads > numberOfDisplayedThreads_
             && displayedThreadLimit_)
@@ -211,6 +218,7 @@ public class VMDetailView extends AbstractConsoleView
               getThreadCPUUtilization(vmInfo_.getThreadMXBean()
                   .getThreadCpuTime(tid), vmInfo_.getProxyClient()
                   .getProcessCpuTime(), 1), getBlockedThread(info));
+          System.out.println(genTrace(info));
         }
       }
       if (newThreadCPUMillis.size() >= numberOfDisplayedThreads_
@@ -229,6 +237,17 @@ public class VMDetailView extends AbstractConsoleView
       System.out
           .printf("%n -Thread CPU telemetries are not available on the monitored jvm/platform-%n");
     }
+  }
+
+  private String genTrace(ThreadInfo info){
+    StringBuilder sb = new StringBuilder();
+    StackTraceElement[] traceArr = info.getStackTrace();
+    for(StackTraceElement trace :traceArr){
+      sb.append("\t\t");
+      sb.append(trace.toString());
+      sb.append("\n");
+    }
+    return sb.toString();
   }
 
   private String getBlockedThread(ThreadInfo info)
@@ -276,6 +295,14 @@ public class VMDetailView extends AbstractConsoleView
   private double getThreadCPUUtilization(long deltaThreadCpuTime, long totalTime)
   {
     return getThreadCPUUtilization(deltaThreadCpuTime, totalTime, 1000 * 1000);
+  }
+
+  public int getDeep() {
+    return deep;
+  }
+
+  public void setDeep(int deep) {
+    this.deep = deep;
   }
 
   private double getThreadCPUUtilization(long deltaThreadCpuTime,
